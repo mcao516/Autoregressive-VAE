@@ -109,7 +109,7 @@ class Model:
     def _get_criterion(self, pad_idx=None):
         """Implement loss function.
         """
-        if not self.args.ingore_pad_idx and pad_idx is not None:
+        if self.args.ingore_pad_idx and pad_idx is not None:
             return nn.NLLLoss(ignore_index=pad_idx)
         else:
             self.logger.info("- WARNNING: no pad-index ignored during training!")
@@ -210,20 +210,26 @@ class Model:
                                                       batch['target'])
                 _, preds = torch.max(outputs, -1)  # preds: [batch_size, seq_len]
 
-                if i == 0:
+                if i < 3:
+                    print("- Example #{}: ".format(i+1))
                     # print("==============================")
                     # print("preds:")
                     # print(preds.shape)
-                    print(preds[0])
+                    print("- {}".format(preds[0][:batch['length'][i]].tolist()))
                     # print('------------------------------')
                     # print('target:')
                     # print(batch['target'].shape)
-                    print(batch['target'][0])
+                    print("- {}".format(batch['target'][0][:batch['length'][i]].tolist()))
                     # print("==============================")
                     # assert 1 == 0
 
                 eval_loss += batch_loss
-                eval_corrects += torch.mean((preds == batch['target']).float()).item()
+                batch_correct = 0.
+                for p, t, l in zip(preds, batch['target'], batch['length']):
+                    batch_correct += torch.sum(p[:l] == t[:l]).item()
+                eval_corrects += batch_correct / torch.sum(batch['length']).item()
+
+                # eval_corrects += torch.mean((preds == batch['target']).float()).item()
 
             # update metrics
             avg_loss = eval_loss / len(eval_dataloader)

@@ -40,7 +40,7 @@ def main():
                         help="The maximum total input sequence length (including eos token).")
     parser.add_argument("--seed", default=610, type=int,
                         help="Random seed.")
-    parser.add_argument("--num_epochs", default=30, type=int,
+    parser.add_argument("--num_epochs", default=100, type=int,
                         help="Total number of training epochs to perform.")
     parser.add_argument("--scheduler", default='warmup', type=str,
                         help="Which type of scheduler to use.")
@@ -61,7 +61,7 @@ def main():
                         help="Linear warmup over warmup_steps.")
     parser.add_argument("--no_cuda", default=False, type=bool,
                         help="Do not use cuda.")
-    parser.add_argument("--ingore_pad_idx", action='store_true', default=True,
+    parser.add_argument("--ingore_pad_idx", action='store_true', default=False,
                         help="Do not commpute loss for padding index.")
 
     parser.add_argument("--data_dir", default='data/', type=str,
