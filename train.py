@@ -59,6 +59,8 @@ def main():
                         help="Max gradient norm.")
     parser.add_argument("--warmup_steps", default=5, type=int,
                         help="Linear warmup over warmup_steps.")
+    parser.add_argument("--no_cuda", default=False, type=bool,
+                        help="Do not use cuda.")
 
     parser.add_argument("--data_dir", default='data/', type=str,
                         help="data directory.")
