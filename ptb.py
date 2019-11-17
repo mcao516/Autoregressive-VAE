@@ -35,7 +35,7 @@ def create_dataloader(datasets, args):
         'valid': args.eval_batch_size,
         'test': args.eval_batch_size
     }
-    for split, value in datasets.item():
+    for split, value in datasets.items():
         loaders[split] = DataLoader(dataset=value,
                                     batch_size=batch_sizes[split],
                                     shuffle=(split == 'train'),

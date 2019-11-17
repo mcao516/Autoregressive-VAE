@@ -57,7 +57,6 @@ class Model:
 
         # tensorboard
         if args.write_summary:
-            self.logger.info("- Let's use tensorboard on local rank {} device :)".format(args.local_rank))
             self.writer = SummaryWriter(self.args.summary_path)
 
     def _build_model(self):
@@ -137,7 +136,7 @@ class Model:
         en_mask = torch.ones_like(inputs, dtype=inputs.dtype)
         en_mask.masked_fill_(inputs == pad_idx, 0)
 
-        return en_mask
+        return en_mask.to(self.args.device)
 
     def loss_batch(self, inputs, labels, optimizer=None, step=None):
         """Compute loss and update model weights on a batch of data.

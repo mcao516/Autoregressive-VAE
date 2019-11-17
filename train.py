@@ -23,7 +23,7 @@ def main():
                         help="Word embedding size and Tranformer hidden size.")
     parser.add_argument("--N", default=3, type=int,
                         help="Transformer stack number.")
-    parser.add_argument("--head_num", default=5, type=int,
+    parser.add_argument("--head_num", default=8, type=int,
                         help="Head number.")
     parser.add_argument("--d_ff", default=256, type=int,
                         help="Linear layer size.")
@@ -109,7 +109,7 @@ def main():
 
     # training
     args.logger.info("Start training !!!")
-    model.fit(data_loaders['train'], data_loaders['valid'])
+    model.fit(data_loaders['valid'], data_loaders['valid'])
 
 
 if __name__ == '__main__':
