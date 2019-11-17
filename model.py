@@ -109,9 +109,10 @@ class Model:
     def _get_criterion(self, pad_idx=None):
         """Implement loss function.
         """
-        if pad_idx:
+        if not self.args.ingore_pad_idx and pad_idx is not None:
             return nn.NLLLoss(ignore_index=pad_idx)
         else:
+            self.logger.info("- WARNNING: no pad-index ignored during training!")
             return nn.NLLLoss()
 
     def load_weights(self, path):
@@ -133,10 +134,10 @@ class Model:
         Args:
             inputs: [batch_size, seq_len]
         """
-        en_mask = torch.ones_like(inputs, dtype=inputs.dtype)
+        en_mask = torch.ones_like(inputs, dtype=inputs.dtype, device=self.args.device)
         en_mask.masked_fill_(inputs == pad_idx, 0)
 
-        return en_mask.to(self.args.device)
+        return en_mask
 
     def loss_batch(self, inputs, labels, optimizer=None, step=None):
         """Compute loss and update model weights on a batch of data.
@@ -151,7 +152,7 @@ class Model:
         """
         mask = self._build_mask(inputs, self.args.pad_idx)
         log_probs = self.model(inputs, mask)  # outputs: [N, S, vocab_size]
-        loss = self.criterion(log_probs, labels)
+        loss = self.criterion(log_probs.transpose(1, 2), labels)
 
         if self.args.n_gpu > 1:
             loss = loss.mean()  # mean() to average on multi-gpu parallel training
@@ -177,6 +178,7 @@ class Model:
 
         train_loss = 0.0
         for i, batch in enumerate(epoch_iterator):
+            batch = {k: v.to(self.args.device) for k, v in batch.items()}
             batch_loss, _ = self.loss_batch(batch['target'],
                                             batch['target'],
                                             optimizer=optimizer,
@@ -203,16 +205,29 @@ class Model:
         with torch.no_grad():
             eval_loss, eval_corrects = 0., 0.
             for i, batch in enumerate(epoch_iterator):
+                batch = {k: v.to(self.args.device) for k, v in batch.items()}
                 batch_loss, outputs = self.loss_batch(batch['target'],
                                                       batch['target'])
                 _, preds = torch.max(outputs, -1)  # preds: [batch_size, seq_len]
-                eval_loss += batch_loss
 
-                eval_corrects += torch.sum(preds == batch['target']).double()
+                if i == 0:
+                    # print("==============================")
+                    # print("preds:")
+                    # print(preds.shape)
+                    print(preds[0])
+                    # print('------------------------------')
+                    # print('target:')
+                    # print(batch['target'].shape)
+                    print(batch['target'][0])
+                    # print("==============================")
+                    # assert 1 == 0
+
+                eval_loss += batch_loss
+                eval_corrects += torch.mean((preds == batch['target']).float()).item()
 
             # update metrics
             avg_loss = eval_loss / len(eval_dataloader)
-            avg_acc = eval_corrects / len(eval_dataloader.dataset)
+            avg_acc = eval_corrects / len(eval_dataloader)
 
         return avg_loss, avg_acc
 

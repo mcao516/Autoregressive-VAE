@@ -21,7 +21,7 @@ def main():
 
     parser.add_argument("--d_model", default=128, type=int,
                         help="Word embedding size and Tranformer hidden size.")
-    parser.add_argument("--N", default=3, type=int,
+    parser.add_argument("--N", default=4, type=int,
                         help="Transformer stack number.")
     parser.add_argument("--head_num", default=8, type=int,
                         help="Head number.")
@@ -34,9 +34,9 @@ def main():
                         help="Batch size for training.")
     parser.add_argument("--per_gpu_eval_batch_size", default=8, type=int,
                         help="Batch size for evaluation.")
-    parser.add_argument("--learning_rate", default=2e-5, type=float,
+    parser.add_argument("--learning_rate", default=1e-3, type=float,
                         help="The initial learning rate for Adam.")
-    parser.add_argument("--max_seq_length", default=128, type=int,
+    parser.add_argument("--max_seq_length", default=64, type=int,
                         help="The maximum total input sequence length (including eos token).")
     parser.add_argument("--seed", default=610, type=int,
                         help="Random seed.")
@@ -51,7 +51,7 @@ def main():
     parser.add_argument('--fp16_opt_level', type=str, default='O1',
                         help="For fp16: Apex AMP optimization level selected in ['O0', 'O1', 'O2', and 'O3']."
                              "See details at https://nvidia.github.io/apex/amp.html")
-    parser.add_argument('--gradient_accumulation_steps', type=int, default=1,
+    parser.add_argument('--gradient_accumulation_steps', type=int, default=2,
                         help="Number of updates steps to accumulate before performing a backward/update pass.")
     parser.add_argument("--adam_epsilon", default=1e-8, type=float,
                         help="Epsilon for Adam optimizer.")
@@ -61,6 +61,8 @@ def main():
                         help="Linear warmup over warmup_steps.")
     parser.add_argument("--no_cuda", default=False, type=bool,
                         help="Do not use cuda.")
+    parser.add_argument("--ingore_pad_idx", action='store_true', default=True,
+                        help="Do not commpute loss for padding index.")
 
     parser.add_argument("--data_dir", default='data/', type=str,
                         help="data directory.")
