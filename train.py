@@ -77,8 +77,8 @@ def main():
     set_seed(args.seed)
 
     # create model output directory
-    if not os.path.exists(args.model_dir):
-        os.makedirs(args.model_dir)
+    if not os.path.exists(args.save_dir):
+        os.makedirs(args.save_dir)
 
     # create logger
     args.logger = get_logger(args.log_path)
