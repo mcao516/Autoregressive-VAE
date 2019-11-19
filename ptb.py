@@ -20,7 +20,7 @@ def build_datasets(args, create_test=True):
     for split in splits:
         datasets[split] = PTB(data_dir=args.data_dir,
                               split=split,
-                              create_data=False,
+                              create_data=True,
                               max_sequence_length=args.max_seq_length,
                               min_occ=1)
     return datasets

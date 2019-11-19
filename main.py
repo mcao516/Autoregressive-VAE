@@ -19,28 +19,28 @@ def main():
     # required parameters
     parser = argparse.ArgumentParser()
 
-    parser.add_argument("--d_model", default=256, type=int,
+    parser.add_argument("--d_model", default=64, type=int,
                         help="Word embedding size and Tranformer hidden size.")
     parser.add_argument("--N", default=3, type=int,
                         help="Transformer stack number.")
     parser.add_argument("--head_num", default=8, type=int,
                         help="Head number.")
-    parser.add_argument("--d_ff", default=512, type=int,
+    parser.add_argument("--d_ff", default=128, type=int,
                         help="Linear layer size.")
-    parser.add_argument("--dropout", default=0.2, type=float,
+    parser.add_argument("--dropout", default=0.1, type=float,
                         help="dropout rate.")
 
     parser.add_argument("--per_gpu_train_batch_size", default=16, type=int,
                         help="Batch size for training.")
     parser.add_argument("--per_gpu_eval_batch_size", default=128, type=int,
                         help="Batch size for evaluation.")
-    parser.add_argument("--learning_rate", default=3.7e-3, type=float,
+    parser.add_argument("--learning_rate", default=1e-4, type=float,
                         help="The initial learning rate for Adam.")
     parser.add_argument("--max_seq_length", default=64, type=int,
                         help="The maximum total input sequence length (including eos token).")
     parser.add_argument("--seed", default=610, type=int,
                         help="Random seed.")
-    parser.add_argument("--num_epochs", default=100, type=int,
+    parser.add_argument("--num_epochs", default=30, type=int,
                         help="Total number of training epochs to perform.")
     parser.add_argument("--scheduler", default='warmup', type=str,
                         help="Which type of scheduler to use.")
@@ -51,7 +51,7 @@ def main():
     parser.add_argument('--fp16_opt_level', type=str, default='O1',
                         help="For fp16: Apex AMP optimization level selected in ['O0', 'O1', 'O2', and 'O3']."
                              "See details at https://nvidia.github.io/apex/amp.html")
-    parser.add_argument('--gradient_accumulation_steps', type=int, default=2,
+    parser.add_argument('--gradient_accumulation_steps', type=int, default=1,
                         help="Number of updates steps to accumulate before performing a backward/update pass.")
     parser.add_argument("--adam_epsilon", default=1e-8, type=float,
                         help="Epsilon for Adam optimizer.")
