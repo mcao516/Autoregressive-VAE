@@ -95,7 +95,7 @@ class Encoder(nn.Module):
         # print("- encoder: {}".format(x.shape))
         for i, layer in enumerate(self.layers):
             x = layer(x, mask)
-            mask = mask[:, :, ::2]
+            # mask = mask[:, :, ::2]
             # print("- encoder: {}".format(x.shape))
         x = self.norm(x) if self.norm else x
 
@@ -124,10 +124,10 @@ class EncoderLayer(nn.Module):
             mask: [batch_size, (1 or seq_len), seq_len]
         """
         # multihead attn & norm
-        a = self.attn(x[:, ::2, :], x, x, mask)
-        t = self.norm1(x[:, ::2, :] + self.dropout1(a))
-        # a = self.attn(x, x, x, mask)
-        # t = self.norm1(x + self.dropout1(a))
+        # a = self.attn(x[:, ::2, :], x, x, mask)
+        # t = self.norm1(x[:, ::2, :] + self.dropout1(a))
+        a = self.attn(x, x, x, mask)
+        t = self.norm1(x + self.dropout1(a))
 
         # feed forward & norm
         z = self.feed_forward(t)  # linear(dropout(act(linear(x)))))
@@ -290,7 +290,7 @@ class DecoderLayer(nn.Module):
         y = self.norm2(t + self.dropout2(z))
 
         # extend sequence
-        y = self.linear(y).view(x.shape[0], -1, x.shape[-1])
+        # y = self.linear(y).view(x.shape[0], -1, x.shape[-1])
 
         return y
 
@@ -316,7 +316,7 @@ class Decoder(nn.Module):
         """
         # print("- decoder: {}".format(x.shape))
         for i, layer in enumerate(self.layers):
-            mask = torch.ones(x.shape[0], 1, x.shape[1], device=x.device)
+            # mask = torch.ones(x.shape[0], 1, x.shape[1], device=x.device)
             x = layer(x, mask)
             # print("- decoder: {}".format(x.shape))
         x = self.norm(x) if self.norm else x
@@ -368,10 +368,10 @@ class EncoderDecoder(nn.Module):
 
         # encoding & decoding
         en_output = self.encoder(en_embeddings, en_mask)
-        de_output = self.decoder(en_output)
+        de_output = self.decoder(en_output, en_mask)
 
         # trim the extra tokens
-        de_output = de_output[:, :en_input.shape[1], :]
+        # de_output = de_output[:, :en_input.shape[1], :]
 
         # linear & softmax
         log_probs = self.linear_softmax(de_output)

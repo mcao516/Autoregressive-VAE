@@ -109,7 +109,7 @@ class Model:
     def _get_criterion(self, pad_idx=None):
         """Implement loss function.
         """
-        if self.args.ingore_pad_idx and pad_idx is not None:
+        if self.args.ignore_pad_idx and pad_idx is not None:
             return nn.NLLLoss(ignore_index=pad_idx)
         else:
             self.logger.info("- WARNNING: no pad-index ignored during training!")
@@ -210,16 +210,16 @@ class Model:
                                                       batch['target'])
                 _, preds = torch.max(outputs, -1)  # preds: [batch_size, seq_len]
 
-                if i < 3:
+                if i in range(3):
                     print("- Example #{}: ".format(i+1))
                     # print("==============================")
                     # print("preds:")
                     # print(preds.shape)
-                    print("- {}".format(preds[0][:batch['length'][i]].tolist()))
+                    print("- {}".format(preds[i][:batch['length'][i]].tolist()))
                     # print('------------------------------')
                     # print('target:')
                     # print(batch['target'].shape)
-                    print("- {}".format(batch['target'][0][:batch['length'][i]].tolist()))
+                    print("- {}".format(batch['target'][i][:batch['length'][i]].tolist()))
                     # print("==============================")
                     # assert 1 == 0
 
