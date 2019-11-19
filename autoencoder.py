@@ -360,7 +360,7 @@ class DecoderExpandLayer(nn.Module):
         y = self.norm2(t + self.dropout2(z))
 
         # extend sequence
-        y = self.linear(y).view(x.shape[0], -1, x.shape[-1])
+        # y = self.linear(y).view(x.shape[0], -1, x.shape[-1])
 
         return y
 
@@ -449,10 +449,10 @@ class EncoderDecoder(nn.Module):
 
         # encoding & decoding
         en_output = self.encoder(en_embeddings, en_mask)
-        de_output = self.decoder(en_output)
+        de_output = self.decoder(en_output, en_mask)
 
         # trim the extra tokens
-        de_output = de_output[:, :en_input.shape[1], :]
+        # de_output = de_output[:, :en_input.shape[1], :]
 
         # linear & softmax
         log_probs = self.linear_softmax(de_output)

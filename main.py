@@ -19,22 +19,22 @@ def main():
     # required parameters
     parser = argparse.ArgumentParser()
 
-    parser.add_argument("--d_model", default=128, type=int,
+    parser.add_argument("--d_model", default=256, type=int,
                         help="Word embedding size and Tranformer hidden size.")
-    parser.add_argument("--N", default=4, type=int,
+    parser.add_argument("--N", default=3, type=int,
                         help="Transformer stack number.")
     parser.add_argument("--head_num", default=8, type=int,
                         help="Head number.")
-    parser.add_argument("--d_ff", default=256, type=int,
+    parser.add_argument("--d_ff", default=512, type=int,
                         help="Linear layer size.")
     parser.add_argument("--dropout", default=0.2, type=float,
                         help="dropout rate.")
 
-    parser.add_argument("--per_gpu_train_batch_size", default=4, type=int,
+    parser.add_argument("--per_gpu_train_batch_size", default=16, type=int,
                         help="Batch size for training.")
-    parser.add_argument("--per_gpu_eval_batch_size", default=8, type=int,
+    parser.add_argument("--per_gpu_eval_batch_size", default=128, type=int,
                         help="Batch size for evaluation.")
-    parser.add_argument("--learning_rate", default=1e-3, type=float,
+    parser.add_argument("--learning_rate", default=3.7e-3, type=float,
                         help="The initial learning rate for Adam.")
     parser.add_argument("--max_seq_length", default=64, type=int,
                         help="The maximum total input sequence length (including eos token).")
@@ -61,7 +61,7 @@ def main():
                         help="Linear warmup over warmup_steps.")
     parser.add_argument("--no_cuda", default=False, type=bool,
                         help="Do not use cuda.")
-    parser.add_argument("--ingore_pad_idx", action='store_true', default=False,
+    parser.add_argument("--ignore_pad_idx", action='store_true', default=False,
                         help="Do not commpute loss for padding index.")
 
     parser.add_argument("--data_dir", default='data/', type=str,
@@ -111,7 +111,7 @@ def main():
 
     # training
     args.logger.info("Start training !!!")
-    model.fit(data_loaders['valid'], data_loaders['valid'])
+    model.fit(data_loaders['train'], data_loaders['valid'])
 
 
 if __name__ == '__main__':
