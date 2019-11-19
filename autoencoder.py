@@ -98,15 +98,15 @@ class Encoder(nn.Module):
             x: [batch_size, seq_len, d_model]
             mask: [batch_size, 1, seq_len]
         """
-        # print("- encoder input: {}".format(x.shape))
+        print("- encoder input: {}".format(x.shape))
         for i, layer in enumerate(self.layers):
             x = layer(x, mask)
-            # print("- encoder: {}".format(x.shape))
+            print("- encoder: {}".format(x.shape))
 
         for i, layer in enumerate(self.reduction_layers):
             x = layer(x, mask)
             mask = mask[:, :, ::2]
-            # print("- encoder: {}".format(x.shape))
+            print("- encoder: {}".format(x.shape))
         x = self.norm(x) if self.norm else x
 
         return x
@@ -395,17 +395,16 @@ class Decoder(nn.Module):
             x: [batch_size, seq_len, d_model]
             mask: [batch_size, 1, seq_len] (optinal)
         """
-        # print("- decoder input: {}".format(x.shape))
+        print("- decoder input: {}".format(x.shape))
         for i, layer in enumerate(self.expand_layers):
             mask = torch.ones(x.shape[0], 1, x.shape[1], device=x.device)
             x = layer(x, mask)
-            # print("- decoder: {}".format(x.shape))
+            print("- decoder: {}".format(x.shape))
 
-        # print("- decoder: {}".format(x.shape))
         for i, layer in enumerate(self.layers):
             mask = torch.ones(x.shape[0], 1, x.shape[1], device=x.device)
             x = layer(x, mask)
-            # print("- decoder: {}".format(x.shape))
+            print("- decoder: {}".format(x.shape))
         x = self.norm(x) if self.norm else x
 
         return x
