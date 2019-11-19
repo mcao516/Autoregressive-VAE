@@ -83,6 +83,11 @@ class Encoder(nn.Module):
                                           FeedForward(d_model, d_ff, dropout=dropout),
                                           LayerNorm(d_model),
                                           LayerNorm(d_model)), N)
+        self.reduction_layers = clones(
+            EncoderReductionLayer(MultiHeadAttentioin(d_model, head_num, dropout=dropout),
+                                  FeedForward(d_model, d_ff, dropout=dropout),
+                                  LayerNorm(d_model),
+                                  LayerNorm(d_model)), N)
         self.norm = LayerNorm(d_model) if last_norm else None
 
     def forward(self, x, mask):
@@ -92,11 +97,14 @@ class Encoder(nn.Module):
             x: [batch_size, seq_len, d_model]
             mask: [batch_size, 1, seq_len]
         """
-        # print("- encoder: {}".format(x.shape))
         for i, layer in enumerate(self.layers):
             x = layer(x, mask)
+            print("- encoder: {}".format(x.shape))
+
+        for i, layer in enumerate(self.reduction_layers):
+            x = layer(x, mask)
             mask = mask[:, :, ::2]
-            # print("- encoder: {}".format(x.shape))
+            print("- encoder: {}".format(x.shape))
         x = self.norm(x) if self.norm else x
 
         return x
@@ -124,10 +132,40 @@ class EncoderLayer(nn.Module):
             mask: [batch_size, (1 or seq_len), seq_len]
         """
         # multihead attn & norm
+        a = self.attn(x, x, x, mask)
+        t = self.norm1(x + self.dropout1(a))
+
+        # feed forward & norm
+        z = self.feed_forward(t)  # linear(dropout(act(linear(x)))))
+        y = self.norm2(t + self.dropout2(z))
+
+        return y
+
+
+class EncoderReductionLayer(nn.Module):
+    """Implement encoder layer that reduce the output size by 2.
+    """
+    def __init__(self, attn, feed_forward, norm1, norm2, dropout=0.1):
+        super(EncoderReductionLayer, self).__init__()
+        self.attn = attn
+        self.feed_forward = feed_forward
+        self.norm1, self.norm2 = norm1, norm2
+
+        self.dropout1 = nn.Dropout(dropout)
+        self.dropout2 = nn.Dropout(dropout)
+
+    def forward(self, x, mask):
+        """Forward through one encoder layer: multi-head attn => add & norm
+           => feed forward => add & norm.
+
+        Args:
+            x: embeddings or output of the last layer.
+                [batch_size, seq_len, d_model]
+            mask: [batch_size, (1 or seq_len), seq_len]
+        """
+        # multihead attn & norm
         a = self.attn(x[:, ::2, :], x, x, mask)
         t = self.norm1(x[:, ::2, :] + self.dropout1(a))
-        # a = self.attn(x, x, x, mask)
-        # t = self.norm1(x + self.dropout1(a))
 
         # feed forward & norm
         z = self.feed_forward(t)  # linear(dropout(act(linear(x)))))
@@ -262,8 +300,40 @@ class FeedForward(nn.Module):
 class DecoderLayer(nn.Module):
     """Implement one encoder layer.
     """
-    def __init__(self, attn, feed_forward, duplicate, norm1, norm2, dropout=0.1):
+    def __init__(self, attn, feed_forward, norm1, norm2, dropout=0.1):
         super(DecoderLayer, self).__init__()
+        self.attn = attn
+        self.feed_forward = feed_forward
+        self.norm1, self.norm2 = norm1, norm2
+
+        self.dropout1 = nn.Dropout(dropout)
+        self.dropout2 = nn.Dropout(dropout)
+
+    def forward(self, x, mask):
+        """Forward through one decoder layer: multi-head attn => add & norm
+           => feed forward => add & norm.
+
+        Args:
+            x: embeddings or output of the last layer.
+                [batch_size, seq_len, d_model]
+            mask: [batch_size, (1 or seq_len), seq_len]
+        """
+        # multihead attn & norm
+        a = self.attn(x, x, x, mask)
+        t = self.norm1(x + self.dropout1(a))
+
+        # feed forward & norm
+        z = self.feed_forward(t)  # linear(dropout(act(linear(x)))))
+        y = self.norm2(t + self.dropout2(z))
+
+        return y
+
+
+class DecoderExpandLayer(nn.Module):
+    """Implement one encoder layer.
+    """
+    def __init__(self, attn, feed_forward, duplicate, norm1, norm2, dropout=0.1):
+        super(DecoderExpandLayer, self).__init__()
         self.attn = attn
         self.feed_forward = feed_forward
         self.linear = duplicate
@@ -302,9 +372,14 @@ class Decoder(nn.Module):
         super(Decoder, self).__init__()
         self.layers = clones(DecoderLayer(MultiHeadAttentioin(d_model, head_num, dropout=dropout),
                                           FeedForward(d_model, d_ff, dropout=dropout),
-                                          nn.Linear(d_model, d_model * 2),
                                           LayerNorm(d_model),
                                           LayerNorm(d_model)), N)
+        self.expand_layers = clones(DecoderExpandLayer(
+                                        MultiHeadAttentioin(d_model, head_num, dropout=dropout),
+                                        FeedForward(d_model, d_ff, dropout=dropout),
+                                        nn.Linear(d_model, d_model * 2),
+                                        LayerNorm(d_model),
+                                        LayerNorm(d_model)), N)
         self.norm = LayerNorm(d_model) if last_norm else None
 
     def forward(self, x, mask=None):
@@ -315,10 +390,16 @@ class Decoder(nn.Module):
             mask: [batch_size, 1, seq_len] (optinal)
         """
         # print("- decoder: {}".format(x.shape))
-        for i, layer in enumerate(self.layers):
+        for i, layer in enumerate(self.expand_layers):
             mask = torch.ones(x.shape[0], 1, x.shape[1], device=x.device)
             x = layer(x, mask)
             # print("- decoder: {}".format(x.shape))
+
+        # print("- decoder: {}".format(x.shape))
+        for i, layer in enumerate(self.layers):
+            mask = torch.ones(x.shape[0], 1, x.shape[1], device=x.device)
+            x = layer(x, mask)
+            # print("- decoder: {}".format(x.shape))    
         x = self.norm(x) if self.norm else x
 
         return x
