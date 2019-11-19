@@ -86,20 +86,13 @@ class Encoder(nn.Module):
         d_v = d_model // head_num
         # d_model = d_model * 2
         # head_num = head_num * 2
-        self.reduction_layers = nn.ModuleList([
-            EncoderReductionLayer(MultiHeadAttentioin(d_model * 2, head_num, dropout=dropout, d_v=d_v),
-                                  FeedForward(d_model, d_ff, dropout=dropout),
-                                  LayerNorm(d_model),
-                                  LayerNorm(d_model)),
-            EncoderReductionLayer(MultiHeadAttentioin(d_model * 2, head_num, dropout=dropout, d_v=d_v),
-                                  FeedForward(d_model, d_ff, dropout=dropout),
-                                  LayerNorm(d_model),
-                                  LayerNorm(d_model)),
-            EncoderReductionLayer(MultiHeadAttentioin(d_model * 2, head_num, dropout=dropout, d_v=d_v),
-                                  FeedForward(d_model, d_ff, dropout=dropout),
-                                  LayerNorm(d_model),
-                                  LayerNorm(d_model))
-        ])
+        self.reduce_layers = clones(EncoderReductionLayer(MultiHeadAttentioin(d_model * 2,
+                                                                              head_num,
+                                                                              dropout=dropout,
+                                                                              d_v=d_v),
+                                                          FeedForward(d_model, d_ff, dropout=dropout),
+                                                          LayerNorm(d_model),
+                                                          LayerNorm(d_model)), N)
         self.norm = LayerNorm(d_model) if last_norm else None
 
     def forward(self, x, mask):
@@ -114,7 +107,7 @@ class Encoder(nn.Module):
             x = layer(x, mask)
             print("- encoder: {}".format(x.shape))
 
-        for i, layer in enumerate(self.reduction_layers):
+        for i, layer in enumerate(self.reduce_layers):
             mask = mask[:, :, ::2]
             x = layer(x, mask)
             print("- encoder: {}".format(x.shape))
