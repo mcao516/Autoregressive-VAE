@@ -13,11 +13,12 @@ import torch.nn as nn
 # import numpy as np
 
 from torch.utils.tensorboard import SummaryWriter
+from torch.optim import AdamW, Adam
 from torch.optim.lr_scheduler import ExponentialLR
 
 from tqdm import tqdm
 # from apex import amp
-from transformers import AdamW, WarmupLinearSchedule
+from transformers import WarmupLinearSchedule
 from autoencoder import EmbeddingLayer, Encoder, Decoder, LinearSoftmax, EncoderDecoder
 
 
@@ -90,9 +91,17 @@ class Model:
     def _get_optimizer(self, optimizer_grouped_parameters):
         """Get optimizer for model training.
         """
-        optimizer = AdamW(optimizer_grouped_parameters,
-                          lr=self.args.learning_rate,
-                          eps=self.args.adam_epsilon)
+        if self.args.optimizer == 'adamw':
+            optimizer = AdamW(optimizer_grouped_parameters,
+                              lr=self.args.learning_rate,
+                              eps=self.args.adam_epsilon)
+        elif self.args.optimizer == 'adam':
+            optimizer = Adam(optimizer_grouped_parameters,
+                             lr=self.args.learning_rate,
+                             eps=self.args.adam_epsilon)
+        else:
+            raise Exception("Unknown optimizer type!")
+
         return optimizer
 
     def _get_scheduler(self, optimizer):

@@ -183,18 +183,19 @@ class EncoderReductionLayer(nn.Module):
 class MultiHeadAttentioin(nn.Module):
     """Implement a multi-head attention layer.
     """
-    def __init__(self, d_model, head_num, dropout=0.1):
+    def __init__(self, d_model, head_num, dropout=0.1, d_v=None):
         super(MultiHeadAttentioin, self).__init__()
         assert d_model % head_num == 0, "d_model must be divisible by head_num"
 
         self.d_model = d_model
         self.head_num = head_num
         self.d_k = d_model // head_num
+        self.d_v = self.d_k if d_v is None else d_v
 
         # d_model = d_k * head_num
         self.W_Q = nn.Linear(d_model, head_num * self.d_k)
         self.W_K = nn.Linear(d_model, head_num * self.d_k)
-        self.W_V = nn.Linear(d_model, head_num * self.d_k)
+        self.W_V = nn.Linear(d_model, head_num * self.d_v)
         self.W_O = nn.Linear(d_model, d_model)
 
         self.dropout = nn.Dropout(dropout)

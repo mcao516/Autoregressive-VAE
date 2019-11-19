@@ -44,6 +44,8 @@ def main():
                         help="Total number of training epochs to perform.")
     parser.add_argument("--scheduler", default='warmup', type=str,
                         help="Which type of scheduler to use.")
+    parser.add_argument("--optimizer", default='adamw', type=str,
+                        help="Which type of optimizer to use.")
     parser.add_argument('--write_summary', default=True, type=bool,
                         help="If write summary into tensorboard.")
     parser.add_argument('--fp16', action='store_true', default=False,
