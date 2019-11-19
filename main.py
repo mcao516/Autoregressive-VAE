@@ -19,13 +19,13 @@ def main():
     # required parameters
     parser = argparse.ArgumentParser()
 
-    parser.add_argument("--d_model", default=64, type=int,
+    parser.add_argument("--d_model", default=256, type=int,
                         help="Word embedding size and Tranformer hidden size.")
     parser.add_argument("--N", default=3, type=int,
                         help="Transformer stack number.")
     parser.add_argument("--head_num", default=8, type=int,
                         help="Head number.")
-    parser.add_argument("--d_ff", default=128, type=int,
+    parser.add_argument("--d_ff", default=512, type=int,
                         help="Linear layer size.")
     parser.add_argument("--dropout", default=0.1, type=float,
                         help="dropout rate.")
@@ -40,7 +40,7 @@ def main():
                         help="The maximum total input sequence length (including eos token).")
     parser.add_argument("--seed", default=610, type=int,
                         help="Random seed.")
-    parser.add_argument("--num_epochs", default=30, type=int,
+    parser.add_argument("--num_epochs", default=50, type=int,
                         help="Total number of training epochs to perform.")
     parser.add_argument("--scheduler", default='warmup', type=str,
                         help="Which type of scheduler to use.")
