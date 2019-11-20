@@ -162,7 +162,11 @@ class Model:
             log_probs: [batch_size, seq_len, vocab_size]
         """
         mask = self._build_mask(inputs, self.args.pad_idx)
-        log_probs = self.model(inputs, mask)  # outputs: [N, S, vocab_size]
+        log_probs, vq_vae_loss = self.model(inputs, mask)  # outputs: [N, S, vocab_size]
+        print(log_probs.shape)
+        print(vq_vae_loss.shape)
+        print(vq_vae_loss)
+        assert 1 == 0
         loss = self.criterion(log_probs.transpose(1, 2), labels)
 
         if self.args.n_gpu > 1:
@@ -223,16 +227,8 @@ class Model:
 
                 if i in range(3):
                     print("- Example #{}: ".format(i+1))
-                    # print("==============================")
-                    # print("preds:")
-                    # print(preds.shape)
                     print("- {}".format(preds[i][:batch['length'][i]].tolist()))
-                    # print('------------------------------')
-                    # print('target:')
-                    # print(batch['target'].shape)
                     print("- {}".format(batch['target'][i][:batch['length'][i]].tolist()))
-                    # print("==============================")
-                    # assert 1 == 0
 
                 eval_loss += batch_loss
                 batch_correct = 0.
@@ -291,6 +287,6 @@ class Model:
         self.model.eval()
         with torch.no_grad():
             mask = self._build_mask(inputs, self.args.pad_idx)
-            log_probs = self.model(inputs, mask)  # outputs: [batch_size, seq_len, vocab_size]
+            log_probs, _ = self.model(inputs, mask)  # outputs: [batch_size, seq_len, vocab_size]
             _, preds = torch.max(log_probs, -1)  # preds: [batch_size, seq_len]
         return preds
