@@ -438,7 +438,7 @@ class EncoderDecoder(nn.Module):
         self.decoder = decoder
         self.linear_softmax = linear_softmax
 
-    def forward(self, en_input, en_mask, quantization_prob=1.0):
+    def forward(self, en_input, en_mask):
         """Forward through the whole encoding & decoing process:
            token embedding => position embedding => encoding =>
            decoding => linear & softmax => probs
