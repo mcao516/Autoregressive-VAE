@@ -12,6 +12,8 @@ import torch.nn.functional as F
 import math
 import copy
 
+from random import randint
+
 
 def clones(module, N):
     """Clone N identical layers.
@@ -456,9 +458,14 @@ class EncoderDecoder(nn.Module):
 
         # encoding & decoding
         en_output = self.encoder(en_embeddings, en_mask)
-        vq_vae_outputs = self.vector_quantizer(en_output)
-        de_output = self.decoder(vq_vae_outputs["quantize"], en_mask)
+        quantized, vq_vqe_loss = self.vector_quantizer(en_output)
+        de_output = self.decoder(quantized, en_mask)
         # de_output = self.decoder(en_output, en_mask)
+
+        # if randint(0, 10) <= 3:
+        #     de_output = self.decoder(quantized, en_mask)
+        # else:
+        #     de_output = self.decoder(en_output, en_mask)
 
         # trim the extra tokens
         de_output = de_output[:, :en_input.shape[1], :]
@@ -466,7 +473,7 @@ class EncoderDecoder(nn.Module):
         # linear & softmax
         log_probs = self.linear_softmax(de_output)
 
-        return log_probs, vq_vae_outputs["loss"]
+        return log_probs, vq_vqe_loss
 
 
 class VectorQuantizer(nn.Module):
@@ -484,6 +491,10 @@ class VectorQuantizer(nn.Module):
         self._commitment_cost = commitment_cost
 
         self.embed = nn.Embedding(num_embeddings, dim_embedding)
+        self.init_embeddings()
+
+    def init_embeddings(self):
+        self.embed.weight.data.uniform_(-1, 1)
 
     def forward(self, inputs):
         """
@@ -500,7 +511,7 @@ class VectorQuantizer(nn.Module):
                          - 2 * torch.matmul(flat_inputs, w.T)  # distances: [N, num_embeddings]
                          + ((w.T)**2).sum(dim=0, keepdim=True))
             encoding_indices = torch.argmax(-distances, 1)  # [N]
-            encodings = F.one_hot(encoding_indices, self.num_embeddings)
+            # encodings = F.one_hot(encoding_indices, self.num_embeddings)
             encoding_indices = encoding_indices.view(inputs.shape[:-1])
 
         # get quantized vectors
@@ -513,7 +524,8 @@ class VectorQuantizer(nn.Module):
 
         quantized = inputs + (quantized.detach() - inputs.detach())
 
-        return {'quantize': quantized,
-                'loss': loss,
-                'encodings': encodings,
-                'encoding_indices': encoding_indices}
+        return quantized, loss
+        # return {'quantize': quantized,
+        #         'loss': loss,
+        #         'encodings': encodings,
+        #         'encoding_indices': encoding_indices}

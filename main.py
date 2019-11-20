@@ -41,13 +41,13 @@ def main():
                         help="Batch size for training.")
     parser.add_argument("--per_gpu_eval_batch_size", default=128, type=int,
                         help="Batch size for evaluation.")
-    parser.add_argument("--learning_rate", default=1e-4, type=float,
+    parser.add_argument("--learning_rate", default=1e-5, type=float,
                         help="The initial learning rate for Adam.")
     parser.add_argument("--max_seq_length", default=64, type=int,
                         help="The maximum total input sequence length (including eos token).")
     parser.add_argument("--seed", default=610, type=int,
                         help="Random seed.")
-    parser.add_argument("--num_epochs", default=80, type=int,
+    parser.add_argument("--num_epochs", default=100, type=int,
                         help="Total number of training epochs to perform.")
     parser.add_argument("--scheduler", default='warmup', type=str,
                         help="Which type of scheduler to use.")
