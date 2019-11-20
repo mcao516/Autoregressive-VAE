@@ -196,7 +196,7 @@ class MultiHeadAttentioin(nn.Module):
         self.W_Q = nn.Linear(d_model, head_num * self.d_k)
         self.W_K = nn.Linear(d_model, head_num * self.d_k)
         self.W_V = nn.Linear(d_model, head_num * self.d_v)
-        self.W_O = nn.Linear(d_model, d_model)
+        self.W_O = nn.Linear(head_num * self.d_v, head_num * self.d_v)
 
         self.dropout = nn.Dropout(dropout)
 
@@ -241,19 +241,16 @@ class MultiHeadAttentioin(nn.Module):
         # query, key, value: [batch_size, head_num, seq_len, d_k]
         query = self.W_Q(q).view(batch_size, -1, self.head_num, self.d_k).transpose(1, 2)
         key = self.W_K(k).view(batch_size, -1, self.head_num, self.d_k).transpose(1, 2)
-        value = self.W_V(v).view(batch_size, -1, self.head_num, self.d_k).transpose(1, 2)
+        value = self.W_V(v).view(batch_size, -1, self.head_num, self.d_v).transpose(1, 2)
 
         # attn: [batch_size, head_num, seq_len, seq_len]
         heads, attn = self.scaled_dp_attn(query, key, value, mask)
         heads = heads.transpose(1, 2).contiguous().view(batch_size, -1,
-                                                        self.head_num * self.d_k)
-        # heads: [batch_size, seq_len, d_model]
-        assert heads.shape[-1] == self.d_model and heads.shape[0] == batch_size
+                                                        self.head_num * self.d_v)
 
         # Concat(head_1, ..., head_n)W_O
         y = self.W_O(heads)
 
-        assert y.shape == q.shape
         return y
 
 

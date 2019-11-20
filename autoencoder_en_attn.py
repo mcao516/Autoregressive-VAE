@@ -227,7 +227,6 @@ class MultiHeadAttentioin(nn.Module):
         # attn: [batch_size, head_num, seq_len, seq_len]
         attn = F.softmax(scores, dim=-1)
         attn = self.dropout(attn)
-
         return torch.matmul(attn, value), attn
 
     def forward(self, q, k, v, mask):
