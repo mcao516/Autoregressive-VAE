@@ -40,7 +40,7 @@ def main():
                         help="The maximum total input sequence length (including eos token).")
     parser.add_argument("--seed", default=610, type=int,
                         help="Random seed.")
-    parser.add_argument("--num_epochs", default=50, type=int,
+    parser.add_argument("--num_epochs", default=80, type=int,
                         help="Total number of training epochs to perform.")
     parser.add_argument("--scheduler", default='warmup', type=str,
                         help="Which type of scheduler to use.")
