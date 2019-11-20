@@ -154,6 +154,7 @@ class EncoderReductionLayer(nn.Module):
 
         self.dropout1 = nn.Dropout(dropout)
         self.dropout2 = nn.Dropout(dropout)
+        self.dropout3 = nn.Dropout(dropout)
 
     def forward(self, x, mask):
         """Forward through one encoder layer: multi-head attn => add & norm
