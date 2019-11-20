@@ -462,4 +462,5 @@ class EncoderDecoder(nn.Module):
 
         # linear & softmax
         log_probs = self.linear_softmax(de_output)
+
         return log_probs

@@ -19,7 +19,7 @@ from torch.optim.lr_scheduler import ExponentialLR
 from tqdm import tqdm
 # from apex import amp
 from transformers import WarmupLinearSchedule
-from autoencoder_de_attn import EmbeddingLayer, Encoder, Decoder, LinearSoftmax, EncoderDecoder
+from autoencoder import EmbeddingLayer, Encoder, Decoder, LinearSoftmax, EncoderDecoder, VectorQuantizer
 
 
 class Model:
@@ -77,7 +77,9 @@ class Model:
                           self.args.d_ff,
                           dropout=self.args.dropout)
         linear_softmax = LinearSoftmax(self.args.d_model, self.args.vocab_size)
-        model = EncoderDecoder(embed, encoder, decoder, linear_softmax)
+        vector_quantizer = VectorQuantizer(self.args.hidden_size, self.args.num_embeddings,
+                                           self.args.commitment_cost)
+        model = EncoderDecoder(embed, encoder, decoder, linear_softmax, vector_quantizer)
 
         return model
 
@@ -160,8 +162,8 @@ class Model:
             log_probs: [batch_size, seq_len, vocab_size]
         """
         mask = self._build_mask(inputs, self.args.pad_idx)
-        log_probs = self.model(inputs, mask)  # outputs: [N, S, vocab_size]
-        loss = self.criterion(log_probs.transpose(1, 2), labels)
+        log_probs, vq_vae_loss = self.model(inputs, mask)  # outputs: [N, S, vocab_size]
+        loss = self.criterion(log_probs.transpose(1, 2), labels) + vq_vae_loss
 
         if self.args.n_gpu > 1:
             loss = loss.mean()  # mean() to average on multi-gpu parallel training
@@ -289,6 +291,6 @@ class Model:
         self.model.eval()
         with torch.no_grad():
             mask = self._build_mask(inputs, self.args.pad_idx)
-            log_probs = self.model(inputs, mask)  # outputs: [batch_size, seq_len, vocab_size]
+            log_probs, _ = self.model(inputs, mask)  # outputs: [batch_size, seq_len, vocab_size]
             _, preds = torch.max(log_probs, -1)  # preds: [batch_size, seq_len]
         return preds

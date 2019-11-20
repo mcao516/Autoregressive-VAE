@@ -431,12 +431,13 @@ class LinearSoftmax(nn.Module):
 class EncoderDecoder(nn.Module):
     """Implement an encoder-decoder architecture.
     """
-    def __init__(self, src_embed, encoder, decoder, linear_softmax):
+    def __init__(self, src_embed, encoder, decoder, linear_softmax, vector_quantizer):
         super(EncoderDecoder, self).__init__()
         self.src_embed = src_embed
         self.encoder = encoder
         self.decoder = decoder
         self.linear_softmax = linear_softmax
+        self.vector_quantizer = vector_quantizer
 
     def forward(self, en_input, en_mask):
         """Forward through the whole encoding & decoing process:
@@ -455,11 +456,64 @@ class EncoderDecoder(nn.Module):
 
         # encoding & decoding
         en_output = self.encoder(en_embeddings, en_mask)
-        de_output = self.decoder(en_output, en_mask)
+        vq_vae_outputs = self.vector_quantizer(en_output)
+        de_output = self.decoder(vq_vae_outputs["quantize"], en_mask)
+        # de_output = self.decoder(en_output, en_mask)
 
         # trim the extra tokens
         de_output = de_output[:, :en_input.shape[1], :]
 
         # linear & softmax
         log_probs = self.linear_softmax(de_output)
-        return log_probs
+
+        return log_probs, vq_vae_outputs["loss"]
+
+
+class VectorQuantizer(nn.Module):
+    """Implements the algorithm presented in
+        'Neural Discrete Representation Learning' by van den Oord et al.
+        https://arxiv.org/abs/1711.00937
+
+       This implementation is heavily based on:
+        https://github.com/deepmind/sonnet/blob/master/sonnet/python/modules/nets/vqvae.py
+    """
+    def __init__(self, dim_embedding, num_embeddings, commitment_cost):
+        super(VectorQuantizer, self).__init__()
+        self.dim_embedding = dim_embedding
+        self.num_embeddings = num_embeddings
+        self._commitment_cost = commitment_cost
+
+        self.embed = nn.Embedding(num_embeddings, dim_embedding)
+
+    def forward(self, inputs):
+        """
+        Args:
+            inputs: [..., dim_embedding]
+        """
+        assert inputs.shape[-1] == self.dim_embedding
+        flat_inputs = inputs.view(-1, inputs.shape[-1])
+
+        # compute distance
+        w = self.embed.weight.detach()
+        with torch.no_grad():
+            distances = ((flat_inputs**2).sum(dim=1, keepdim=True)
+                         - 2 * torch.matmul(flat_inputs, w.T)  # distances: [N, num_embeddings]
+                         + ((w.T)**2).sum(dim=0, keepdim=True))
+            encoding_indices = torch.argmax(-distances, 1)  # [N]
+            encodings = F.one_hot(encoding_indices, self.num_embeddings)
+            encoding_indices = encoding_indices.view(inputs.shape[:-1])
+
+        # get quantized vectors
+        quantized = self.embed(encoding_indices)
+
+        # compute loss
+        q_latent_loss = torch.mean((inputs.detach() - quantized) ** 2)
+        e_latent_loss = torch.mean((inputs - quantized.detach()) ** 2)
+        loss = q_latent_loss + self._commitment_cost * e_latent_loss
+
+        quantized = inputs + (quantized.detach() - inputs.detach())
+
+        return {'quantize': quantized,
+                'loss': loss,
+                'encodings': encodings,
+                'encoding_indices': encoding_indices}
