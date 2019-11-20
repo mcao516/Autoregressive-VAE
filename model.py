@@ -19,7 +19,7 @@ from torch.optim.lr_scheduler import ExponentialLR
 from tqdm import tqdm
 # from apex import amp
 from transformers import WarmupLinearSchedule
-from autoencoder import EmbeddingLayer, Encoder, Decoder, LinearSoftmax, EncoderDecoder, VectorQuantizer
+from autoencoder import EmbeddingLayer, Encoder, Decoder, LinearSoftmax, EncoderDecoder
 
 
 class Model:
@@ -77,9 +77,7 @@ class Model:
                           self.args.d_ff,
                           dropout=self.args.dropout)
         linear_softmax = LinearSoftmax(self.args.d_model, self.args.vocab_size)
-        vector_quantizer = VectorQuantizer(self.args.hidden_size, self.args.num_embeddings,
-                                           self.args.commitment_cost)
-        model = EncoderDecoder(embed, encoder, decoder, linear_softmax, vector_quantizer)
+        model = EncoderDecoder(embed, encoder, decoder, linear_softmax)
 
         return model
 
@@ -162,11 +160,7 @@ class Model:
             log_probs: [batch_size, seq_len, vocab_size]
         """
         mask = self._build_mask(inputs, self.args.pad_idx)
-        log_probs, vq_vae_loss = self.model(inputs, mask)  # outputs: [N, S, vocab_size]
-        print(log_probs.shape)
-        print(vq_vae_loss.shape)
-        print(vq_vae_loss)
-        assert 1 == 0
+        log_probs = self.model(inputs, mask)  # outputs: [N, S, vocab_size]
         loss = self.criterion(log_probs.transpose(1, 2), labels)
 
         if self.args.n_gpu > 1:
@@ -236,8 +230,6 @@ class Model:
                     batch_correct += torch.sum(p[:l] == t[:l]).item()
                 eval_corrects += batch_correct / torch.sum(batch['length']).item()
 
-                # eval_corrects += torch.mean((preds == batch['target']).float()).item()
-
             # update metrics
             avg_loss = eval_loss / len(eval_dataloader)
             avg_acc = eval_corrects / len(eval_dataloader)
@@ -287,6 +279,6 @@ class Model:
         self.model.eval()
         with torch.no_grad():
             mask = self._build_mask(inputs, self.args.pad_idx)
-            log_probs, _ = self.model(inputs, mask)  # outputs: [batch_size, seq_len, vocab_size]
+            log_probs = self.model(inputs, mask)  # outputs: [batch_size, seq_len, vocab_size]
             _, preds = torch.max(log_probs, -1)  # preds: [batch_size, seq_len]
         return preds
