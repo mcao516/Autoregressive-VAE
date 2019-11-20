@@ -162,7 +162,7 @@ class Model:
             log_probs: [batch_size, seq_len, vocab_size]
         """
         mask = self._build_mask(inputs, self.args.pad_idx)
-        log_probs, _ = self.model(inputs, mask)  # outputs: [N, S, vocab_size]
+        log_probs = self.model(inputs, mask)  # outputs: [N, S, vocab_size]
         loss = self.criterion(log_probs.transpose(1, 2), labels)
 
         if self.args.n_gpu > 1:
@@ -291,6 +291,6 @@ class Model:
         self.model.eval()
         with torch.no_grad():
             mask = self._build_mask(inputs, self.args.pad_idx)
-            log_probs, _ = self.model(inputs, mask)  # outputs: [batch_size, seq_len, vocab_size]
+            log_probs = self.model(inputs, mask)  # outputs: [batch_size, seq_len, vocab_size]
             _, preds = torch.max(log_probs, -1)  # preds: [batch_size, seq_len]
         return preds
