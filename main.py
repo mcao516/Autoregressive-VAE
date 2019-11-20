@@ -41,7 +41,7 @@ def main():
                         help="Batch size for training.")
     parser.add_argument("--per_gpu_eval_batch_size", default=128, type=int,
                         help="Batch size for evaluation.")
-    parser.add_argument("--learning_rate", default=1e-5, type=float,
+    parser.add_argument("--learning_rate", default=1e-4, type=float,
                         help="The initial learning rate for Adam.")
     parser.add_argument("--max_seq_length", default=64, type=int,
                         help="The maximum total input sequence length (including eos token).")
