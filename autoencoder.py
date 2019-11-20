@@ -458,13 +458,14 @@ class EncoderDecoder(nn.Module):
 
         # encoding & decoding
         en_output = self.encoder(en_embeddings, en_mask)
+        de_output = self.decoder(en_output, en_mask)
 
-        if random() <= quantization_prob:
-            quantized, vq_vqe_loss = self.vector_quantizer(en_output)
-            de_output = self.decoder(quantized, en_mask)
-        else:
-            _, vq_vqe_loss = self.vector_quantizer(en_output, False)
-            de_output = self.decoder(en_output, en_mask)
+        # if random() <= quantization_prob:
+        #     quantized, vq_vqe_loss = self.vector_quantizer(en_output)
+        #     de_output = self.decoder(quantized, en_mask)
+        # else:
+        #     _, vq_vqe_loss = self.vector_quantizer(en_output, False)
+        #     de_output = self.decoder(en_output, en_mask)
 
         # trim the extra tokens
         de_output = de_output[:, :en_input.shape[1], :]
@@ -472,7 +473,7 @@ class EncoderDecoder(nn.Module):
         # linear & softmax
         log_probs = self.linear_softmax(de_output)
 
-        return log_probs, vq_vqe_loss
+        return log_probs, 0.
 
 
 class VectorQuantizer(nn.Module):
@@ -527,8 +528,9 @@ class VectorQuantizer(nn.Module):
 
         quantized = inputs + (quantized.detach() - inputs.detach())
 
-        return quantized, loss
         # return {'quantize': quantized,
         #         'loss': loss,
         #         'encodings': encodings,
         #         'encoding_indices': encoding_indices}
+        return quantized, loss
+
