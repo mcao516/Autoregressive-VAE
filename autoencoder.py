@@ -12,7 +12,7 @@ import torch.nn.functional as F
 import math
 import copy
 
-from random import randint
+from random import random
 
 
 def clones(module, N):
@@ -441,7 +441,7 @@ class EncoderDecoder(nn.Module):
         self.linear_softmax = linear_softmax
         self.vector_quantizer = vector_quantizer
 
-    def forward(self, en_input, en_mask):
+    def forward(self, en_input, en_mask, quantization_prob=1.0):
         """Forward through the whole encoding & decoing process:
            token embedding => position embedding => encoding =>
            decoding => linear & softmax => probs
@@ -458,14 +458,13 @@ class EncoderDecoder(nn.Module):
 
         # encoding & decoding
         en_output = self.encoder(en_embeddings, en_mask)
-        quantized, vq_vqe_loss = self.vector_quantizer(en_output)
-        de_output = self.decoder(quantized, en_mask)
-        # de_output = self.decoder(en_output, en_mask)
 
-        # if randint(0, 10) <= 3:
-        #     de_output = self.decoder(quantized, en_mask)
-        # else:
-        #     de_output = self.decoder(en_output, en_mask)
+        if random() <= quantization_prob:
+            quantized, vq_vqe_loss = self.vector_quantizer(en_output)
+            de_output = self.decoder(quantized, en_mask)
+        else:
+            _, vq_vqe_loss = self.vector_quantizer(en_output, False)
+            de_output = self.decoder(en_output, en_mask)
 
         # trim the extra tokens
         de_output = de_output[:, :en_input.shape[1], :]
@@ -496,7 +495,7 @@ class VectorQuantizer(nn.Module):
     def init_embeddings(self):
         self.embed.weight.data.uniform_(-1, 1)
 
-    def forward(self, inputs):
+    def forward(self, inputs, use_commitment_cost=True):
         """
         Args:
             inputs: [..., dim_embedding]
@@ -519,8 +518,12 @@ class VectorQuantizer(nn.Module):
 
         # compute loss
         q_latent_loss = torch.mean((inputs.detach() - quantized) ** 2)
-        e_latent_loss = torch.mean((inputs - quantized.detach()) ** 2)
-        loss = q_latent_loss + self._commitment_cost * e_latent_loss
+
+        if use_commitment_cost:
+            e_latent_loss = torch.mean((inputs - quantized.detach()) ** 2)
+            loss = q_latent_loss + self._commitment_cost * e_latent_loss
+        else:
+            loss = q_latent_loss
 
         quantized = inputs + (quantized.detach() - inputs.detach())
 

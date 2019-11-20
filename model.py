@@ -162,7 +162,14 @@ class Model:
             log_probs: [batch_size, seq_len, vocab_size]
         """
         mask = self._build_mask(inputs, self.args.pad_idx)
-        log_probs, vq_vae_loss = self.model(inputs, mask)  # outputs: [N, S, vocab_size]
+        if step:
+            if step < 10:
+                log_probs, vq_vae_loss = self.model(inputs, mask, 0.)  # outputs: [N, S, vocab_size]
+            else:
+                prob = step / self.args.num_epochs
+                log_probs, vq_vae_loss = self.model(inputs, mask, prob)  # outputs: [N, S, vocab_size]
+        else:
+            log_probs, vq_vae_loss = self.model(inputs, mask)  # outputs: [N, S, vocab_size]
         loss = self.criterion(log_probs.transpose(1, 2), labels) + vq_vae_loss
 
         if self.args.n_gpu > 1:
