@@ -19,7 +19,7 @@ from torch.optim.lr_scheduler import ExponentialLR
 from tqdm import tqdm
 # from apex import amp
 from transformers import WarmupLinearSchedule
-from autoencoder import EmbeddingLayer, Encoder, Decoder, LinearSoftmax, EncoderDecoder
+from autoencoder_en_attn import EmbeddingLayer, Encoder, Decoder, LinearSoftmax, EncoderDecoder
 
 
 class Model:
