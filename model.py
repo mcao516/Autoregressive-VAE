@@ -70,11 +70,13 @@ class Model:
                           self.args.N,
                           self.args.head_num,
                           self.args.d_ff,
+                          self.args.hidden_size,
                           dropout=self.args.dropout)
         decoder = Decoder(self.args.d_model,
                           self.args.N,
                           self.args.head_num,
                           self.args.d_ff,
+                          self.args.hidden_size,
                           dropout=self.args.dropout)
         linear_softmax = LinearSoftmax(self.args.d_model, self.args.vocab_size)
         model = EncoderDecoder(embed, encoder, decoder, linear_softmax)

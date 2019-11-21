@@ -76,7 +76,7 @@ class EmbeddingLayer(nn.Module):
 class Encoder(nn.Module):
     """The encoder is composed of a stack of N = 6 identical layers.
     """
-    def __init__(self, d_model, N, head_num, d_ff, dropout=0.1, last_norm=True):
+    def __init__(self, d_model, N, head_num, d_ff, hidden_size, dropout=0.1):
         super(Encoder, self).__init__()
         self.N = N
         self.layers = clones(EncoderLayer(MultiHeadAttentioin(d_model, head_num, dropout=dropout),
@@ -89,7 +89,9 @@ class Encoder(nn.Module):
                                   nn.Linear(d_model, d_model // 2),
                                   LayerNorm(d_model),
                                   LayerNorm(d_model)), N)
-        self.norm = LayerNorm(d_model) if last_norm else None
+
+        self.linear = nn.Linear(d_model, hidden_size)
+        self.norm = LayerNorm(hidden_size)
 
     def forward(self, x, mask):
         """Forward through N identical layers.
@@ -107,8 +109,9 @@ class Encoder(nn.Module):
             x = layer(x, mask)
             mask = mask[:, :, ::2]
             print("- encoder: {}".format(x.shape))
-        x = self.norm(x) if self.norm else x
 
+        x = self.norm(self.linear(x))
+        print("- encoder: {}".format(x.shape))
         return x
 
 
@@ -375,7 +378,7 @@ class DecoderExpandLayer(nn.Module):
 class Decoder(nn.Module):
     """The encoder is composed of a stack of N = 6 identical layers.
     """
-    def __init__(self, d_model, N, head_num, d_ff, dropout=0.1, last_norm=True):
+    def __init__(self, d_model, N, head_num, d_ff, hidden_size, dropout=0.1, last_norm=True):
         super(Decoder, self).__init__()
         self.layers = clones(DecoderLayer(MultiHeadAttentioin(d_model, head_num, dropout=dropout),
                                           FeedForward(d_model, d_ff, dropout=dropout),
@@ -387,6 +390,8 @@ class Decoder(nn.Module):
                                         nn.Linear(d_model, d_model * 2),
                                         LayerNorm(d_model),
                                         LayerNorm(d_model)), N)
+
+        self.linear = nn.Linear(hidden_size, d_model)
         self.norm = LayerNorm(d_model) if last_norm else None
 
     def forward(self, x, mask=None):
@@ -397,6 +402,9 @@ class Decoder(nn.Module):
             mask: [batch_size, 1, seq_len] (optinal)
         """
         print("- decoder input: {}".format(x.shape))
+        x = self.linear(x)
+        print("- decoder input reshape: {}".format(x.shape))
+
         for i, layer in enumerate(self.expand_layers):
             mask = torch.ones(x.shape[0], 1, x.shape[1], device=x.device)
             x = layer(x, mask)
