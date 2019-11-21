@@ -78,7 +78,7 @@ class EmbeddingLayer(nn.Module):
 class Encoder(nn.Module):
     """The encoder is composed of a stack of N = 6 identical layers.
     """
-    def __init__(self, d_model, N, head_num, d_ff, dropout=0.1, last_norm=True):
+    def __init__(self, d_model, N, head_num, d_ff, hidden_size, dropout=0.1):
         super(Encoder, self).__init__()
         self.N = N
         self.layers = clones(EncoderLayer(MultiHeadAttentioin(d_model, head_num, dropout=dropout),
@@ -91,7 +91,7 @@ class Encoder(nn.Module):
                                   nn.Linear(d_model, d_model // 2),
                                   LayerNorm(d_model),
                                   LayerNorm(d_model)), N)
-        self.norm = LayerNorm(d_model) if last_norm else None
+        self.linear = nn.Linear(d_model, hidden_size)
 
     def forward(self, x, mask):
         """Forward through N identical layers.
@@ -109,7 +109,7 @@ class Encoder(nn.Module):
             x = layer(x, mask)
             mask = mask[:, :, ::2]
             # print("- encoder: {}".format(x.shape))
-        x = self.norm(x) if self.norm else x
+        x = self.linear(x)
 
         return x
 
@@ -377,7 +377,7 @@ class DecoderExpandLayer(nn.Module):
 class Decoder(nn.Module):
     """The encoder is composed of a stack of N = 6 identical layers.
     """
-    def __init__(self, d_model, N, head_num, d_ff, dropout=0.1, last_norm=True):
+    def __init__(self, d_model, N, head_num, d_ff, hidden_size, dropout=0.1):
         super(Decoder, self).__init__()
         self.layers = clones(DecoderLayer(MultiHeadAttentioin(d_model, head_num, dropout=dropout),
                                           FeedForward(d_model, d_ff, dropout=dropout),
@@ -389,7 +389,8 @@ class Decoder(nn.Module):
                                         nn.Linear(d_model, d_model * 2),
                                         LayerNorm(d_model),
                                         LayerNorm(d_model)), N)
-        self.norm = LayerNorm(d_model) if last_norm else None
+        self.linear = nn.Linear(hidden_size, d_model)
+        self.norm = LayerNorm(d_model)
 
     def forward(self, x, mask=None):
         """Forward through N identical layers.
@@ -398,6 +399,7 @@ class Decoder(nn.Module):
             x: [batch_size, seq_len, d_model]
             mask: [batch_size, 1, seq_len] (optinal)
         """
+        x = self.linear(x)
         # print("- decoder input: {}".format(x.shape))
         for i, layer in enumerate(self.expand_layers):
             mask = torch.ones(x.shape[0], 1, x.shape[1], device=x.device)
@@ -408,7 +410,7 @@ class Decoder(nn.Module):
             mask = torch.ones(x.shape[0], 1, x.shape[1], device=x.device)
             x = layer(x, mask)
             # print("- decoder: {}".format(x.shape))
-        x = self.norm(x) if self.norm else x
+        x = self.norm(x)
 
         return x
 
@@ -458,14 +460,8 @@ class EncoderDecoder(nn.Module):
 
         # encoding & decoding
         en_output = self.encoder(en_embeddings, en_mask)
-        # de_output = self.decoder(en_output, en_mask)
-
-        if random() <= quantization_prob:
-            quantized, vq_vqe_loss = self.vector_quantizer(en_output)
-            de_output = self.decoder(quantized, en_mask)
-        else:
-            _, vq_vqe_loss = self.vector_quantizer(en_output, False)
-            de_output = self.decoder(en_output, en_mask)
+        quantized, vq_vqe_loss = self.vector_quantizer(en_output)
+        de_output = self.decoder(quantized, en_mask)
 
         # trim the extra tokens
         de_output = de_output[:, :en_input.shape[1], :]
@@ -496,7 +492,7 @@ class VectorQuantizer(nn.Module):
     def init_embeddings(self):
         self.embed.weight.data.uniform_(-1, 1)
 
-    def forward(self, inputs, use_commitment_cost=True):
+    def forward(self, inputs):
         """
         Args:
             inputs: [..., dim_embedding]
@@ -519,12 +515,8 @@ class VectorQuantizer(nn.Module):
 
         # compute loss
         q_latent_loss = torch.mean((inputs.detach() - quantized) ** 2)
-
-        if use_commitment_cost:
-            e_latent_loss = torch.mean((inputs - quantized.detach()) ** 2)
-            loss = q_latent_loss + self._commitment_cost * e_latent_loss
-        else:
-            loss = q_latent_loss
+        e_latent_loss = torch.mean((inputs - quantized.detach()) ** 2)
+        loss = q_latent_loss + self._commitment_cost * e_latent_loss
 
         quantized = inputs + (quantized.detach() - inputs.detach())
 

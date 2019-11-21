@@ -30,7 +30,7 @@ def main():
     parser.add_argument("--dropout", default=0.1, type=float,
                         help="dropout rate.")
 
-    parser.add_argument("--hidden_size", default=256, type=int,
+    parser.add_argument("--hidden_size", default=16, type=int,
                         help="Batch size for training.")
     parser.add_argument("--num_embeddings", default=512, type=int,
                         help="Batch size for training.")
